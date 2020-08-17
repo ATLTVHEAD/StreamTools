@@ -1,41 +1,38 @@
-import os
-import tempfile
-import atexit
-import subprocess
 import cv2
+import subprocess as sp
+import numpy
 
-FFMPEG_BIN = '/usr/bin/ffmpeg'
+IMG_W = 1280
+IMG_H = 720
 
-def run_ffmpeg(fifo_path):
-    ffmpg_cmd = [
-        FFMPEG_BIN,
-        '-i', '/dev/video0',
-        '-r', '1',
-        '-pix_fmt', 'bgr24',        # opencv requires bgr24 pixel format.
-        '-vcodec', 'rawvideo',
-        '-an','-sn',                # disable audio processing
-        '-f', 'yuv',
-        fifo_path 
-    ]
-    return subprocess.Popen(ffmpg_cmd)
+FFMPEG_BIN = "C:/FFmpeg/bin/ffmpeg"
+ffmpeg_cmd = [ FFMPEG_BIN,
+			'-i', 'srt://192.168.1.202:1935?streamid=output/live/atl',
+			'-r', '24',					# FPS
+			'-pix_fmt', 'bgr24',      	# opencv requires bgr24 pixel format.
+			'-vcodec', 'rawvideo',
+			'-an','-sn',              	# disable audio processing
+			'-f', 'image2pipe', '-']    
+pipe = sp.Popen(ffmpeg_cmd, stdout = sp.PIPE, bufsize=10**8)
 
+fgbg4 = cv2.createBackgroundSubtractorKNN(history = 200, dist2Threshold= 300.0 ,detectShadows=True); 
 
-def run_cv_window(fifo_path):
-    cap = cv2.VideoCapture(fifo_path)
-    while True:
-        ret, frame = cap.read()
-        cv2.imshow('Video', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cv2.destroyAllWindows()
+while True:
+	raw_image = pipe.stdout.read(IMG_W*IMG_H*3)
+	image =  numpy.frombuffer(raw_image, dtype='uint8')		# convert read bytes to np
+	image = image.reshape((IMG_H,IMG_W,3))
+	frame2 = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+	ret,frame3 = cv2.threshold(frame2,80,255,cv2.THRESH_BINARY)
+	fgmask4 = fgbg4.apply(frame3)
+	roughOutput = cv2.bitwise_and(image, image, mask=fgmask4)
 
+	cv2.imshow('Video', image)
+	#cv2.imshow('Video2', frame2)
+	#cv2.imshow('Video3', frame3)
+	#cv2.imshow('Video4', roughOutput)
+	if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
+	
+	pipe.stdout.flush()
 
-def run():
-    fifo_path = tempfile.mktemp(suffix='img_pipe')
-    os.mkfifo(fifo_path)
-    atexit.register(os.unlink, fifo_path)
-    ffmpeg_process = run_ffmpeg(fifo_path)
-    run_cv_window(fifo_path)
-
-if __name__ == '__main__':
-    run()
+cv2.destroyAllWindows()
