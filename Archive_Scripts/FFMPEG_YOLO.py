@@ -25,7 +25,7 @@ def main(_argv):
 
 	FFMPEG_BIN = "C:/FFmpeg/bin/ffmpeg"
 	ffmpeg_cmd = [ FFMPEG_BIN,
-				'-i', 'srt://192.168.1.202:1935?streamid=output/live/atl',
+				'-i', 'srt://192.168.1.106:1935?streamid=output/live/atl',
 				'-r', '24',					# FPS
 				'-pix_fmt', 'bgr24',      	# opencv requires bgr24 pixel format.
 				'-vcodec', 'rawvideo',

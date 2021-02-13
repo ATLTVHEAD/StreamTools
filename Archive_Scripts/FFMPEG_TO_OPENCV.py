@@ -1,8 +1,4 @@
 import time 
-import tensorflow as tf
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 from absl import app, flags, logging
 from absl.flags import FLAGS
 import cv2
@@ -16,7 +12,7 @@ def main(_argv):
 
 	FFMPEG_BIN = "C:/FFmpeg/bin/ffmpeg"
 	ffmpeg_cmd = [ FFMPEG_BIN,
-				'-i', 'srt://192.168.1.202:1935?streamid=output/live/atl',
+				'-i', 'srt://192.168.1.106:1935?streamid=output/live/atl',
 				'-r', '24',					# FPS
 				'-pix_fmt', 'bgr24',      	# opencv requires bgr24 pixel format.
 				'-vcodec', 'rawvideo',
